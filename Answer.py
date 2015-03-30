@@ -1,5 +1,5 @@
 import questions.py
 
 class Answer:
-	def __init__(self, UDPport, question):
+	def __init__(self, UDPport, socket, question):
 		#Vastaa kysymykseen
