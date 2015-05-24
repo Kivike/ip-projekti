@@ -9,11 +9,11 @@ TCPport = 10000
 UDPbindPort = 9000
 UDPsendPort = None
 if (len(sys.argv) >= 2):
-	host = sys.argv[1]
+        host = sys.argv[1]
 if (len(sys.argv) >= 3):
-	TCPport = int(sys.argv[2])
+        TCPport = int(sys.argv[2])
 if (len(sys.argv) == 4):
-	UDPbindPort = int(sys.argv[3])
+        UDPbindPort = int(sys.argv[3])
 
 print 'Creating a TCP connection to %s:%d' % (host, TCPport)
 TCPsocket.connect((host, TCPport))
@@ -39,10 +39,16 @@ data = struct.pack('!??HH64s', eom, ack, length, remaining, msg)
 UDPsocket.sendto(data, (host, UDPsendPort));
 print "Sent initial message, waiting for a question"
 while True:
-	data, addr = UDPsocket.recvfrom(1024)
-	print "HOST:", data
-	eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
-	answer = questions.answer(msg)
-	print "CLIENT:", answer
-	sent = struct.pack('!??HH64s', eom, ack, length, remaining, answer)
-	UDPsocket.sendto(sent, (host, UDPsendPort));
+        data, addr = UDPsocket.recvfrom(1024)
+        
+        print "HOST:", data
+        eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
+
+        if "Bye." in msg:
+                UDPsocket.close()
+                break
+        
+        answer = questions.answer(msg)
+        print "CLIENT:", answer
+        sent = struct.pack('!??HH64s', eom, ack, length, remaining, answer)
+        UDPsocket.sendto(sent, (host, UDPsendPort));
