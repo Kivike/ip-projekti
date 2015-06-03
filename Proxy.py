@@ -7,8 +7,9 @@ TCPbindPort = None
 UDPbindPort = None
 serverUDPport = None
 serverConn = None
-serverAddr = "ii.virtues.fi"
+serverAddr = socket.gethostbyname("ii.virtues.fi")
 serverPort = 10000
+
 
 def findavailableports():
     print "Finding available ports"
@@ -64,18 +65,16 @@ def initconnections(msg):
     splitMsg = msg.split()
 
     if len(splitMsg) != 2:
-        print "123"
         return None
 
     if splitMsg[0] != "HELO":
-        print "456"
         return None
 
-    clientUDPport = None
+    clientPort = None
     try:
-        clientUDPport = int(splitMsg[1].replace("\r\n", ""))
+        clientPort = int(splitMsg[1].replace("\r\n", ""))
     except:
-        print "789"
+        return None
 
 
     TCPsocket = socket.socket()
@@ -95,17 +94,17 @@ TCPsocket = socket.socket()
 UDPsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 TCPbindPort, UDPbindPort = findavailableports()
 
-
 TCPsocket.listen(1)
 
 print "Waiting for connection"
 
 clientConn = None
 while(clientConn == None):
-    clientConn, clientAddr = TCPsocket.accept()
+    clientConn, addrWithPort = TCPsocket.accept()
+
 
 TCPsocket.close()
-
+clientAddr = addrWithPort[0]
 print "Client connected from " + str(clientAddr)
 
 msgFromClient = clientConn.recv(1024)
@@ -113,17 +112,16 @@ print repr(msgFromClient)
 
 clientUDPport = initconnections(msgFromClient)
 if clientUDPport == None:
-    sys.exit("Failed to establish connections")
+    sys.exit("Wrong message format from client. Needs to be 'HELO portnumber\r\n'")
 
 while(True):
-    data, addr = UDPsocket.recvfrom(1024)
-    print "Received UDP packet"
-    print addr
+    data, addrWithPort = UDPsocket.recvfrom(1024)
+    print "Received UDP packet from", addrWithPort[0]
 
-    if addr[0] == clientAddr[0]:
+    if addrWithPort[0] == clientAddr:
         print "Received packet from the client."
         forwardtoserver(data)
-    else:
+    elif addrWithPort[0] == serverAddr:
         print "Received packet from the server."
         forwardtoclient(data, clientUDPport)
     eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
