@@ -3,12 +3,10 @@ import struct
 import sys
 import questions
 
-
+# Set default arguments
 host = "ii.virtues.fi"
 TCPsendPort = 10000
 UDPbindPort = 9000
-TCPsocket = socket.socket()
-UDPsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Check if command line args were given and do operations based on them
 def checkarguments():
@@ -33,7 +31,7 @@ def checkarguments():
         if sys.argv[i] == "-info" or sys.argv[i] == "-help" or sys.argv[i] == "-h":
             print "Python client for Introduction to Internet 2015"
             print "Roope Rajala"
-            print "Peetu Nuottajarvi"
+            print "Peetu Nuottajaervi"
             print "Samuel Savikoski"
             print "Arguments:"
             print "-host [host], Set host address (default ii.virtues.fi)"
@@ -43,15 +41,15 @@ def checkarguments():
             sys.exit()
 
 # Request a UDP port from the host with a TCP message
-def requestUDPport():
+def requestUDPport(tcpsocket):
     global host, TCPsendPort
 
     print 'Creating a TCP connection to %s:%d' % (host, TCPsendPort)
-    TCPsocket.connect((host, TCPsendPort))
-    TCPsocket.settimeout(5)
-    TCPsocket.send("HELO %d\r\n" % UDPbindPort)
+    tcpsocket.connect((host, TCPsendPort))
+    tcpsocket.settimeout(5)
+    tcpsocket.send("HELO %d\r\n" % UDPbindPort)
     msg = TCPsocket.recv(1024)
-    TCPsocket.close()
+    socket.close()
     print ("HOST: "+ repr(msg))
     return int(filter(lambda x: x.isdigit(), msg))
 
@@ -84,11 +82,12 @@ if __name__ == "__main__":
     print "Commands are given with arguments"
     print "Use -help for a list of commands and more information"
     print "#"*45
+
+    TCPsocket = socket.socket()
+    UDPsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
     checkarguments()
-
-
-    UDPsendPort = requestUDPport()
-
+    UDPsendPort = requestUDPport(TCPsocket)
     sendinitialmessage(UDPsendPort)
 
     # Receive questions and answer them

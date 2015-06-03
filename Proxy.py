@@ -1,4 +1,3 @@
-import re
 import socket
 import struct
 import sys
@@ -45,13 +44,13 @@ def closeconnections():
 
 def forwardtoclient(data, clientUDPport):
     eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
-    UDPsocket.sendto(data, (clientAddr[0], clientUDPport))
+    UDPsocket.sendto(data, (clientAddr, clientUDPport))
     print "Forwarded packet to the client"
     if eom == True:
         closeconnections()
         sys.exit("EOM received, exiting.")
 
-def forwardtoserver(data):
+def forwardtoserver(data, serverUDPport):
     eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
     UDPsocket.sendto(data, (serverAddr, serverUDPport))
     print "Forwarded packet to the server."
@@ -70,9 +69,8 @@ def initconnections(msg):
     if splitMsg[0] != "HELO":
         return None
 
-    clientPort = None
     try:
-        clientPort = int(splitMsg[1].replace("\r\n", ""))
+        clientport = int(splitMsg[1].replace("\r\n", ""))
     except:
         return None
 
@@ -87,7 +85,7 @@ def initconnections(msg):
     serverUDPport = int(filter(lambda x: x.isdigit(), msgFromServer))
     clientConn.send("HELO %d\r\n" % UDPbindPort)
 
-    return clientUDPport
+    return clientport
 
 # Find a free tcp port
 TCPsocket = socket.socket()
@@ -97,15 +95,12 @@ TCPbindPort, UDPbindPort = findavailableports()
 TCPsocket.listen(1)
 
 print "Waiting for connection"
-
-clientConn = None
-while(clientConn == None):
-    clientConn, addrWithPort = TCPsocket.accept()
-
+clientConn, addrWithPort = TCPsocket.accept()
 
 TCPsocket.close()
+
 clientAddr = addrWithPort[0]
-print "Client connected from " + str(clientAddr)
+print "Client connected from", clientAddr
 
 msgFromClient = clientConn.recv(1024)
 print repr(msgFromClient)
@@ -120,7 +115,7 @@ while(True):
 
     if addrWithPort[0] == clientAddr:
         print "Received packet from the client."
-        forwardtoserver(data)
+        forwardtoserver(data, serverUDPport)
     elif addrWithPort[0] == serverAddr:
         print "Received packet from the server."
         forwardtoclient(data, clientUDPport)
