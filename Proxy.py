@@ -4,8 +4,7 @@
 # Samuel Savikoski
 ############################################################
 # This proxy is a stand-alone program                      #
-# There are no arguments, if you wish to change serverAddr #
-# of the proxy, edit serverAddr variable below.            #
+# If you want to change the server, use ip:port as argument#
 # Accepts ONE client connection and forwards all messages  #
 # between server and client.                               #
 ############################################################
@@ -16,6 +15,15 @@ import sys
 
 serverAddr = socket.gethostbyname("ii.virtues.fi")
 serverPort = 10000
+
+def checkarguments():
+    global serverAddr
+    try:
+        serverAddr, serverPort = sys.argv[1].split(":")
+        serverAddr = socket.gethostbyname(serverAddr)
+    except:
+        sys.exit("Invalid server address")
+
 
 # Select which ports to bind
 # Tries all ports in range 10000-10099
@@ -91,6 +99,8 @@ def initconnections(msg, UDPbindPort, clientconn):
     return (clientport, serverport)
 
 if "__name__" == "__main__":
+    checkarguments()
+
     TCPsocket = socket.socket()
     UDPsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     TCPbindPort, UDPbindPort = findavailableports()
@@ -126,8 +136,3 @@ if "__name__" == "__main__":
                 forwarding = False
 
     UDPsocket.close()
-
-
-
-
-
