@@ -2,10 +2,6 @@ import socket
 import struct
 import sys
 
-TCPbindPort = None
-UDPbindPort = None
-serverUDPport = None
-serverConn = None
 serverAddr = socket.gethostbyname("ii.virtues.fi")
 serverPort = 10000
 
@@ -18,7 +14,7 @@ def findavailableports():
         try:
             TCPsocket.bind(("0.0.0.0", port))
             TCPport = port
-            print "Bind on tcpport " + str(port)
+            print "Bind on TCP port ", port
             break
         except:
             print str(port) + " didn't work"
@@ -29,7 +25,7 @@ def findavailableports():
         try:
             UDPsocket.bind(("0.0.0.0", port))
             UDPport = port
-            print "Bind on udpport " + str(port)
+            print "Bind on UDP port ", port
             break
         except:
             print str(port) + " didn't work"
@@ -38,42 +34,36 @@ def findavailableports():
     return (TCPport, UDPport)
 
 def closeconnections():
+    print "Closing connections and sockets"
     UDPsocket.close()
-    TCPsocket.close()
     clientConn.close()
 
 def forwardtoclient(data, clientUDPport):
     eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
     UDPsocket.sendto(data, (clientAddr, clientUDPport))
     print "Forwarded packet to the client"
-    if eom == True:
-        closeconnections()
-        sys.exit("EOM received, exiting.")
+    return eom
 
 def forwardtoserver(data, serverUDPport):
     eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
     UDPsocket.sendto(data, (serverAddr, serverUDPport))
     print "Forwarded packet to the server."
-    if eom == True:
-        closeconnections()
-        sys.exit("EOM received, exiting.")
+    return eom
 
 def initconnections(msg):
-    global clientConn, serverConn, serverUDPport, UDPbindPort, serverPort, serverAddr
+    # Send TCP message to server to request UDP port
+    # Send own UDP bind port to the client
+    global clientConn, serverConn, serverUDPport, serverPort, serverAddr
 
     splitMsg = msg.split()
 
-    if len(splitMsg) != 2:
-        return None
-
-    if splitMsg[0] != "HELO":
+    if len(splitMsg) != 2 or splitMsg[0] != "HELO":
         return None
 
     try:
         clientport = int(splitMsg[1].replace("\r\n", ""))
     except:
         return None
-
 
     TCPsocket = socket.socket()
     TCPsocket.connect((serverAddr, serverPort))
@@ -82,12 +72,11 @@ def initconnections(msg):
     msgFromServer = TCPsocket.recv(1024)
     TCPsocket.close()
 
-    serverUDPport = int(filter(lambda x: x.isdigit(), msgFromServer))
+    serverport = int(filter(lambda x: x.isdigit(), msgFromServer))
     clientConn.send("HELO %d\r\n" % UDPbindPort)
 
-    return clientport
+    return (clientport, serverport)
 
-# Find a free tcp port
 TCPsocket = socket.socket()
 UDPsocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 TCPbindPort, UDPbindPort = findavailableports()
@@ -105,21 +94,24 @@ print "Client connected from", clientAddr
 msgFromClient = clientConn.recv(1024)
 print repr(msgFromClient)
 
-clientUDPport = initconnections(msgFromClient)
+clientUDPport, serverUDPport = initconnections(msgFromClient, UDPbindPort)
+
 if clientUDPport == None:
     sys.exit("Wrong message format from client. Needs to be 'HELO portnumber\r\n'")
 
-while(True):
+forwarding = True
+while(forwarding):
     data, addrWithPort = UDPsocket.recvfrom(1024)
     print "Received UDP packet from", addrWithPort[0]
 
     if addrWithPort[0] == clientAddr:
         print "Received packet from the client."
-        forwardtoserver(data, serverUDPport)
+        if forwardtoserver(data, serverUDPport) == True:
+            forwarding = False
     elif addrWithPort[0] == serverAddr:
         print "Received packet from the server."
-        forwardtoclient(data, clientUDPport)
-    eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
+        if forwardtoclient(data, clientUDPport) == True:
+            forwarding = False
 
 closeconnections()
 
