@@ -1,6 +1,6 @@
 Roope Rajala 2374556 roope.rajala@student.oulu.fi
-Peetu Nuottaj‰rvi 2374491 peetu.nuottajarvi@student.oulu.fi
-Samuel Savikoski
+Peetu Nuottaj√§rvi 2374491 peetu.nuottajarvi@student.oulu.fi
+Samuel Savikoski 2374637 samuel.savikoski@student.oulu.fi
 
 
 Proxy.py is independent from Client.py
