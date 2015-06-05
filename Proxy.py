@@ -21,6 +21,7 @@ def checkarguments():
     try:
         serverAddr, serverPort = sys.argv[1].split(":")
         serverAddr = socket.gethostbyname(serverAddr)
+        serverPort = int(serverPort)
     except:
         sys.exit("Invalid server address")
 
@@ -118,19 +119,20 @@ if "__name__" == "__main__":
     print repr(msgFromClient)
     clientUDPport, serverUDPport = initconnections(msgFromClient, UDPbindPort, clientConn)
 
-    if clientUDPport == None:
+    if clientUDPport == None or serverUDPport == None:
         sys.exit("Wrong message format from client. Needs to be 'HELO portnumber\r\n'")
 
     forwarding = True
     while(forwarding):
         data, addrWithPort = UDPsocket.recvfrom(1024)
+        addr = addrWithPort[0]
         print "Received UDP packet from", addrWithPort[0]
 
-        if addrWithPort[0] == clientAddr:
+        if addr == clientAddr:
             print "Received packet from the client."
             if forwardtoserver(data, serverUDPport) == True:
                 forwarding = False
-        elif addrWithPort[0] == serverAddr:
+        elif addr == serverAddr:
             print "Received packet from the server."
             if forwardtoclient(data, clientUDPport) == True:
                 forwarding = False
