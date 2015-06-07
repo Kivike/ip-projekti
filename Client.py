@@ -48,9 +48,9 @@ def requestUDPport(tcpsocket):
     tcpsocket.connect((host, TCPsendPort))
     tcpsocket.settimeout(5)
     tcpsocket.send("HELO %d\r\n" % UDPbindPort)
-    msg = TCPsocket.recv(1024)
-    socket.close()
-    print ("HOST: "+ repr(msg))
+    msg = tcpsocket.recv(1024)
+    tcpsocket.close()
+    print "HOST: "+ repr(msg)
     return int(filter(lambda x: x.isdigit(), msg))
 
 # Send first message to the server
@@ -98,7 +98,7 @@ if __name__ == "__main__":
             print "HOST:", data
             eom, ack, length, remaining, msg = struct.unpack("!??HH64s", data)
 
-            if "Bye." in msg or eom == True:
+            if eom == True:
                     print "Closing UDP socket"
                     UDPsocket.close()
                     break
