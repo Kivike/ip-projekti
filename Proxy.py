@@ -1,13 +1,7 @@
-# Introduction to Internet 2015
+# Introduction to Internet 2015 course work
 # Roope Rajala
-# Peetu Nuottajärvi
+# Peetu Nuottajaervi
 # Samuel Savikoski
-############################################################
-# This proxy is a stand-alone program                      #
-# If you want to change the server, use ip:port as argument#
-# Accepts ONE client connection and forwards all messages  #
-# between server and client.                               #
-############################################################
 
 import socket
 import struct
@@ -17,14 +11,37 @@ serverAddr = socket.gethostbyname("ii.virtues.fi")
 serverPort = 10000
 
 def checkarguments():
-    global serverAddr
-    try:
-        serverAddr, serverPort = sys.argv[1].split(":")
-        serverAddr = socket.gethostbyname(serverAddr)
-        serverPort = int(serverPort)
-    except:
-        sys.exit("Invalid server address")
+    global serverAddr, serverPort
+    if len(sys.argv) > 1:
+        for i in range(0, len(sys.argv)):
+            if sys.argv[i] == "-ip":
+                try:
+                    serverAddr = socket.gethostbyname(sys.argv[i+1])
+                except:
+                    sys.exit("Invalid address")
 
+            if sys.argv[i] == "-port":
+                try:
+                    serverPort = int(sys.argv[i+1])
+                except:
+                    sys.exit("Invalid port")
+
+            if sys.argv[i] == "-test":
+                print "Testing with default arguments"
+
+            if sys.argv[i] == "-help" or sys.argv[i] == "-info" or sys.argv[i] == "-h":
+                printhelp()
+                sys.exit()
+    else:
+        printhelp()
+        sys.exit()
+
+def printhelp():
+    print "Proxy for Introduction to Internet 2015"
+    print "Arguments:"
+    print "-ip [address], set server ip (default: ii.virtues.fi)"
+    print "-port [port], set server tcp port (default: 10000)"
+    print "-test, test with default arguments"
 
 # Select which ports to bind
 # Tries all ports in range 10000-10099
@@ -99,7 +116,7 @@ def initconnections(msg, UDPbindPort, clientconn):
 
     return (clientport, serverport)
 
-if "__name__" == "__main__":
+if __name__ == "__main__":
     checkarguments()
 
     TCPsocket = socket.socket()
@@ -108,7 +125,7 @@ if "__name__" == "__main__":
 
     # Listen TCP socket for client
     TCPsocket.listen(1)
-    print "Waiting for connection"
+    print "Listening..."
     clientConn, addrWithPort = TCPsocket.accept()
     TCPsocket.close()
 
